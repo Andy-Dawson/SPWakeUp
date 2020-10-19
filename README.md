@@ -12,4 +12,4 @@ This project was originally hosted at Codeplex. The archive is hosted at https:/
 
 SPWakeUp was originally provided for SharePoint 2007. It was also made available for SharePoint 2010. I provided builds for SharePoint 2013 and 2016. I have used SPWakeUp numerous times and found it to be a simple and reliable solution to wake up a SharePoint on-premises farm before users start accessing it for the day.
 
-If you wish to compile SPWakeUp3 yourself, please follow the information in <build-it-yourself.md>.
+If you wish to compile SPWakeUp3 yourself, please follow the information in [Build-it-yourself.md](Build-it-yourself.md).
