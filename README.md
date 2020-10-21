@@ -6,7 +6,7 @@ A simple command line application that touches each site collection and sub-site
 
 ---
 
-**Note:** The original code is not mine, I'm providing this for those people still wanting to use SPWakeUp.
+**Note:** The original code is not mine, I'm providing this for those people still wanting to use SPWakeUp. If you own the original code and object to me hosting it here, please let me know.
 
 This project was originally hosted at Codeplex. The archive is hosted at https://archive.codeplex.com/?p=spwakeup, the original source code for each release is also avaialble within the archive file that can be downloaded from that location.
 
