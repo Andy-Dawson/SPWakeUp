@@ -24,7 +24,7 @@ THe following screenshot shows SPWakeUp running on a simple SharePoint 2019 farm
 
 ![SPWakeUp3_2019 running](Media/README/SPWakeUp3_2019-running.png)
 
-You'll generally want to schedule SPWakeUp to run once a day on your Web-Front End servers sometime after IIS has been reset. I usually schedule all of the content application pools to recycle at the same time and then schedule SPWakeUp to run on each front end server one minute later. You should avoid times when other activities will be going on (e.g. backups) as SPWakeUp can cause significant server load while it runs. If you have more than one front end server in your farm and are using load balancing, you should also use entries in each server's hosts file to point each web application URL at the local server's IP address to ensure that all front end servers get owken up.
+You'll generally want to schedule SPWakeUp to run once a day on your front end servers sometime after IIS has been reset. I usually schedule all of the content application pools to recycle at the same time and then schedule SPWakeUp to run on each front end server one minute later. You should avoid times when other activities will be going on (e.g. backups) as SPWakeUp can cause significant server load while it runs. If you have more than one front end server in your farm and are using load balancing, you should also use entries in each server's hosts file to point each web application URL at the local server's IP address to ensure that all front end servers get owken up.
 
 Available run-time options are:
 
