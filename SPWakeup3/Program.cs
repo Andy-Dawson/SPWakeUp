@@ -9,6 +9,7 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
 using System.Web;
 using System.Collections;
+using System.Reflection;
 
 namespace SPWakeup3
 {
@@ -17,16 +18,10 @@ namespace SPWakeup3
         public InitValues()
         { }
 
-        public void AppendExclude(string newAddress)
-        {
-            if (!excludeArray.Contains(newAddress.ToLower()))
-            {
-                excludeArray.Add(newAddress.ToLower());
-            }
-        }
         //public string logFile = "";
         //public string excludeFile = "";
         public ArrayList excludeArray = new ArrayList();
+        public ArrayList includeArray = new ArrayList();
         public string userName = "";
         public string password = "";
         public string domain = "";
@@ -36,6 +31,22 @@ namespace SPWakeup3
         public bool verbose = false;
         public bool run = true;
         //public string mailServer = "";
+
+        public void AppendExclude(string newAddress)
+        {
+            if (!excludeArray.Contains(newAddress.ToLower()))
+            {
+                excludeArray.Add(newAddress.ToLower());
+            }
+        }
+
+        public void AppendInclude(string newAddress)
+        {
+            if (!includeArray.Contains(newAddress.ToLower()))
+            {
+                includeArray.Add(newAddress.ToLower());
+            }
+        }
     }
 
     public class SiteCollection
@@ -158,6 +169,8 @@ namespace SPWakeup3
         
         static void Main(string[] args)
         {
+            Version version = Assembly.GetExecutingAssembly().GetName().Version;
+            log.AppendEntry("SPWakeUp v" + version.Major + "." + version.Minor + "." + version.Build);
             log.AppendEntry("Started running at " + DateTime.Now.ToString());
             log.AppendEntry("Running on the system " + System.Environment.MachineName);
 
@@ -230,11 +243,33 @@ namespace SPWakeup3
                         }
                         
                         Console.WriteLine("");
-                        Console.WriteLine("");
+                        //Console.WriteLine("");
                     }
                 }
 
-                if (initVals.email != "")
+                foreach (string includeUrl in initVals.includeArray)
+                {
+                    log.AppendEntry("");
+                    log.AppendEntry("Waking additional URL at " + includeUrl);
+
+                    bool success = GetWebPage(includeUrl, initVals.userName, initVals.password, initVals.domain, initVals.authType);
+                    if (success)
+                    {
+                        if (initVals.verbose)
+                        {
+                            log.AppendEntry("Woke: " + includeUrl);
+                        }
+                        else
+                        {
+                            drawTextProgressBar(1, 1);
+                            //Console.Write(".");
+                        }
+                        Console.WriteLine("");
+                    }
+
+                }
+
+                    if (initVals.email != "")
                 {
                     string br = "<br>\n";
 
@@ -249,7 +284,7 @@ namespace SPWakeup3
                             body += "Did not wake any sites." + br;
                             break;
                         case 1:
-                            body += "Sucessfully woke 1 site1." + br;
+                            body += "Sucessfully woke 1 site." + br;
                             break;
                         default:
                             body += "Successfully woke " + log.successCount.ToString() + " sites." + br;
@@ -299,7 +334,11 @@ namespace SPWakeup3
                 help.Add("Available run-time options are: ");
                 help.Add("-Exclude: Excludes the listed Site Collection URL from being woken.");
                 help.Add("Can be used more than once. Example:");
-                help.Add("spwakeup3.exe -Exclude:http://badsite.com -Exclude:http://badsite2.com");
+                help.Add("SPWakeUp3.exe -Exclude:http://sharepoint.sp.com/sites/SC1 -Exclude:http://sharepoint.sp.com/sites/SC2");
+                help.Add("-Include: Includes the listed URL in the list to be woken.");
+                help.Add("Can be used more than once. Example:");
+                help.Add("SPWakeUp3.exe -Exclude:http://sharepoint.sp.com/sites/SC1 -Include:http://sharepoint.sp.com/sites/SC1/SubSite1");
+                help.Add("which would exclude the entirety of the SC1 site collection except SubSite1 from the wake-up process.");
                 help.Add("-Email: An email address that should be sent a log of the results.");
                 help.Add("-UserName: Name of the account that should be used to browse the sites.");
                 help.Add("If no user name is set, sites are accessed under the current account.");
@@ -417,6 +456,10 @@ namespace SPWakeup3
                     case "-exclude":
                         initVals.AppendExclude(currentArg.Substring(9));
                         log.AppendEntry("Excluding the site: " + currentArg.Substring(9));
+                        break;
+                    case "-include":
+                        initVals.AppendInclude(currentArg.Substring(9));
+                        log.AppendEntry("Including the address: " + currentArg.Substring(9));
                         break;
                     case "-username":
                         initVals.userName = currentArg.Substring(10);
