@@ -20,7 +20,7 @@ If you wish to compile SPWakeUp yourself, please follow the information in [Buil
 
 [Releases](https://github.com/Andy-Dawson/SPWakeUp/releases) contain binaries compiled for SharePoint 2013, SharePoint 2016 and SharePoint 2019.
 
-Running SPWakeUp without any options will search for and find all Web Applications on your farm. Each Web App will in turn be searched for Site Collections and Sub-Sites. Once a list of every URL is built, spwakup will open an HTTP connection to each in turn. This rebuilds the caches on the server which improves performance for subsequent visits.
+Running SPWakeUp without any options will search for and find all Web Applications on your farm. Each Web App will in turn be searched for Site Collections and Sub-Sites. Once a list of every URL is built, spwakup will open an HTTP connection to each in turn. This rebuilds the caches on the server which improves performance for subsequent visits. To configure your SharePoint far to use SHWakeUp, follow the instructions at [SharePoint-configuration.md](SharePoint-configuration.md).
 
 THe following screenshot shows SPWakeUp v1.1.0 running on a simple SharePoint 2019 farm:
 
