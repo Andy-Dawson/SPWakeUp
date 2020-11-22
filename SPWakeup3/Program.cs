@@ -22,6 +22,7 @@ namespace SPWakeup3
         //public string excludeFile = "";
         public ArrayList excludeArray = new ArrayList();
         public ArrayList includeArray = new ArrayList();
+        public ArrayList includeFileArray = new ArrayList();
         public string userName = "";
         public string password = "";
         public string domain = "";
@@ -46,6 +47,40 @@ namespace SPWakeup3
             {
                 includeArray.Add(newAddress.ToLower());
             }
+        }
+
+        public void AppendIncludeFile(string newFile)
+        {
+            // Check to see that the file specified exists
+            FileInfo fInfo = new FileInfo(newFile);
+            if (!fInfo.Exists)
+            {
+                Console.WriteLine("Include file " + newFile + " was not found, skipping...");
+            }   
+            else
+            {
+                // We found the include file. Check to see that it has something in it...
+                if (fInfo.Length == 0)
+                {
+                    Console.WriteLine("Include file " + newFile + " appears to be empty, skipping...");
+                }
+                else
+                {
+                    // Read the file contents line by line. Should be a list of URLs. Use AppendInclude here?
+                    string[] IncludeFileLines = System.IO.File.ReadAllLines(@newFile);
+                    // Call AppendInclude to add each line (URL) from the file
+
+                    // Display the file contents by using a foreach loop.
+                    foreach (string line in IncludeFileLines)
+                    {
+                        // Use a tab to indent each line of the file.
+                        Console.WriteLine("\t Adding URL " + line);
+                        AppendInclude(line);
+                    }
+
+                }
+            }
+            
         }
     }
 
@@ -339,6 +374,9 @@ namespace SPWakeup3
                 help.Add("Can be used more than once. Example:");
                 help.Add("SPWakeUp3.exe -Exclude:http://sharepoint.sp.com/sites/SC1 -Include:http://sharepoint.sp.com/sites/SC1/SubSite1");
                 help.Add("which would exclude the entirety of the SC1 site collection except SubSite1 from the wake-up process.");
+                help.Add("-IncludeFile: Includes URLs listed in the text file specified. Include the full path to the file on the local file system.");
+                help.Add("Use once. URLs should be listed one per line. Example:");
+                help.Add("SPWakeUp3.exe -IncludeFile:C:\\SPWakeUp\\URLstoWake.txt");
                 help.Add("-Email: An email address that should be sent a log of the results.");
                 help.Add("-UserName: Name of the account that should be used to browse the sites.");
                 help.Add("If no user name is set, sites are accessed under the current account.");
@@ -454,12 +492,16 @@ namespace SPWakeup3
                     //    initVals.excludeFile = currentArg.Substring(8);
                     //    break;
                     case "-exclude":
-                        initVals.AppendExclude(currentArg.Substring(9));
                         log.AppendEntry("Excluding the site: " + currentArg.Substring(9));
+                        initVals.AppendExclude(currentArg.Substring(9));
                         break;
                     case "-include":
-                        initVals.AppendInclude(currentArg.Substring(9));
                         log.AppendEntry("Including the address: " + currentArg.Substring(9));
+                        initVals.AppendInclude(currentArg.Substring(9));
+                        break;
+                    case "-includefile":
+                        log.AppendEntry("Including address from file: " + currentArg.Substring(13));
+                        initVals.AppendIncludeFile(currentArg.Substring(13));
                         break;
                     case "-username":
                         initVals.userName = currentArg.Substring(10);

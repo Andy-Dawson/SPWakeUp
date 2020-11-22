@@ -16,15 +16,17 @@ If you wish to compile SPWakeUp yourself, please follow the information in [Buil
 
 ---
 
+**New version released**: V1.2.0 includes the ability to import a file of URLs to be included in the list of URLs to be woken.
+
 **New version released**: V1.1.0 includes the ability to include specific URLs in the list of URLs to be woken.
 
 [Releases](https://github.com/Andy-Dawson/SPWakeUp/releases) contain binaries compiled for SharePoint 2013, SharePoint 2016 and SharePoint 2019.
 
 Running SPWakeUp without any options will search for and find all Web Applications on your farm. Each Web App will in turn be searched for Site Collections and Sub-Sites. Once a list of every URL is built, spwakup will open an HTTP connection to each in turn. This rebuilds the caches on the server which improves performance for subsequent visits. To configure your SharePoint far to use SHWakeUp, follow the instructions at [SharePoint-configuration.md](SharePoint-configuration.md).
 
-THe following screenshot shows SPWakeUp v1.1.0 running on a simple SharePoint 2019 farm:
+THe following screenshot shows SPWakeUp v1.2.0 running on a simple SharePoint 2019 farm:
 
-![SPWakeUp3_2019 v1.1.0 running](Media/README/SPWakeUp3_2019_v1.1.0-running.png)
+![SPWakeUp3_2019 v1.2.0 running](Media/README/SPWakeUp3_2019_v1.2.0-running.png)
 
 You'll generally want to schedule SPWakeUp to run once a day on your front end servers sometime after IIS has been reset. I usually schedule all of the content application pools to recycle at the same time and then schedule SPWakeUp to run on each front end server one minute later. You should avoid times when other activities will be going on (e.g. backups) as SPWakeUp can cause significant server load while it runs. If you have more than one front end server in your farm and are using load balancing, you should also use entries in each server's hosts file to point each web application URL at the local server's IP address to ensure that all front end servers get owken up.
 
@@ -37,6 +39,11 @@ This example would exclude the two listed site collections and everything undern
 -Include (new for v1.1.0): Includes the URL in the list of URLs to be woken. Note that this can also be used to wake a specific URL on another system (as long as the account that is being used has access).  
 Can be used more than once. Example: SPWakeUp3.exe -Exclude:http://sharepoint.domain.com/sites/SC1 -Include:http://sharepoint.domain.com/sites/SC1/SubSite1  
 This example would exclude the site collection listed and everything underneath it, with the exception of the SubSite1 subsite which would be woken. Note that at present only the specific URL specified by the -Include paramter would be woken. If you require subsites beneath this to also be woken, they must also be specified.
+
+-IncludeFile (new for v1.2.0): Includes the URLs in the specified file in the list of URLs to be woken. Useful when several URLs are to be included instead of specifying each on the command line individually.
+Should be used once. Example: SPWakeUp3.exe -Include:C:\SPWakeUp\URLs.txt
+This example would include the additional URLs specified in the file URLs.txt located at C:\SPWakeUp on the local server.
+URLs should be specified one per line in the file to be used. If an empty file is specified, or the file specified does not exist, it is skipped.
 
 -Email: An email address that should be sent a log of the results.  
 **Note**: The implementation currently uses SharePoint's e-mail configuration to send e-mail. To send e-mail you should have configured SharePoint's outgoing e-mail and have ensured that the configuration is functional. Use of SPWakeUp3 on a system not running SharePoint will mean that e-mail notifications will not work.
