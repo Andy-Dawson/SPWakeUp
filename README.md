@@ -16,6 +16,8 @@ If you wish to compile SPWakeUp yourself, please follow the information in [Buil
 
 ---
 
+**New version released**: V1.3.0 includes the ability to run on a server that is not running SharePoint to wake arbitrary URLs.
+
 **New version released**: V1.2.0 includes the ability to import a file of URLs to be included in the list of URLs to be woken.
 
 **New version released**: V1.1.0 includes the ability to include specific URLs in the list of URLs to be woken.
@@ -41,9 +43,12 @@ Can be used more than once. Example: SPWakeUp3.exe -Exclude:http://sharepoint.do
 This example would exclude the site collection listed and everything underneath it, with the exception of the SubSite1 subsite which would be woken. Note that at present only the specific URL specified by the -Include paramter would be woken. If you require subsites beneath this to also be woken, they must also be specified.
 
 -IncludeFile (new for v1.2.0): Includes the URLs in the specified file in the list of URLs to be woken. Useful when several URLs are to be included instead of specifying each on the command line individually.
-Should be used once. Example: SPWakeUp3.exe -Include:C:\SPWakeUp\URLs.txt
+Should be used once. Example: SPWakeUp3.exe -IncludeFile:C:\SPWakeUp\URLs.txt
 This example would include the additional URLs specified in the file URLs.txt located at C:\SPWakeUp on the local server.
 URLs should be specified one per line in the file to be used. If an empty file is specified, or the file specified does not exist, it is skipped.
+
+-NotASharePointServer (new for v1.3.0): Specify that you are running SPWakeUp on a server that is NOT running SharePoint. This will cause SPWakeUp not to check for the presence of SharePoint and not to attempt to identify the URLs for web applications, site collections and sub-sites. IMPORTANT: When using this parameter, you MUST include either -Include or -IncludeFile (or both) to specify the actual URL(s) you want to wake.
+Should be used once. Example: SPWakeUp3.exe -NotASharePointServer -Include:http://anothersystem.domain.com
 
 -Email: An email address that should be sent a log of the results.  
 **Note**: The implementation currently uses SharePoint's e-mail configuration to send e-mail. To send e-mail you should have configured SharePoint's outgoing e-mail and have ensured that the configuration is functional. Use of SPWakeUp3 on a system not running SharePoint will mean that e-mail notifications will not work.

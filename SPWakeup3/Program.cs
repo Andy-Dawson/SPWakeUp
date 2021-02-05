@@ -29,6 +29,7 @@ namespace SPWakeup3
         public string authType = "NTLM";
         public string email = "";
         public string mailSite = "";
+        public bool isSPServer = true;
         public bool verbose = false;
         public bool run = true;
         //public string mailServer = "";
@@ -201,7 +202,7 @@ namespace SPWakeup3
         public static InitValues initVals = new InitValues();
         public static Log log = new Log();
         public static ArrayList ignoreArray = new ArrayList();
-        
+
         static void Main(string[] args)
         {
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -211,74 +212,86 @@ namespace SPWakeup3
 
             GetInitValues(args);
 
+            // Need to let the user know if they have specified -notasharepointserver and NOT specified additional URLs. In this case nothing would happen...
+            if (initVals.isSPServer == false)
+            {
+                if (initVals.includeArray.Count == 0)
+                {
+                    log.AppendEntry("As we're running on a non-SharePoint server and no include values are specified we expect NOTHING TO HAPPEN");
+                }
+            }
+
             if (initVals.run)
             {
-                ArrayList siteCollArray = new ArrayList();
-                try
+                if (initVals.isSPServer == true)
                 {
-                    SPFarm farm = SPFarm.Local;
-                    SPWebService service = farm.Services.GetValue<SPWebService>("");
-                    foreach (SPWebApplication webApp in service.WebApplications)
+                    ArrayList siteCollArray = new ArrayList();
+                    try
                     {
-                        try
+                        SPFarm farm = SPFarm.Local;
+                        SPWebService service = farm.Services.GetValue<SPWebService>("");
+                        foreach (SPWebApplication webApp in service.WebApplications)
                         {
-                            foreach (SPSite currentsite in webApp.Sites)
+                            try
                             {
-                                if (NotOnIgnoreList(currentsite.Url))
+                                foreach (SPSite currentsite in webApp.Sites)
                                 {
-                                    SiteCollection newSite = new SiteCollection(currentsite.Url, ignoreArray, initVals.verbose);
-                                    siteCollArray.Add(newSite);
-                                    log.AddSite(currentsite.Url);
+                                    if (NotOnIgnoreList(currentsite.Url))
+                                    {
+                                        SiteCollection newSite = new SiteCollection(currentsite.Url, ignoreArray, initVals.verbose);
+                                        siteCollArray.Add(newSite);
+                                        log.AddSite(currentsite.Url);
 
-                                    //Set our outgoing email site to the first site collection found
-                                    if (initVals.mailSite == "")
-                                    { initVals.mailSite = currentsite.Url; }
+                                        //Set our outgoing email site to the first site collection found
+                                        if (initVals.mailSite == "")
+                                        { initVals.mailSite = currentsite.Url; }
+                                    }
                                 }
                             }
+                            catch { }
                         }
-                        catch { }
                     }
-                }
-                catch
-                { Console.WriteLine("Trouble getting handle on Sharepoint Farm. Must be run on a Sharepoint/WSS server."); }
+                    catch
+                    { Console.WriteLine("Trouble getting handle on Sharepoint Farm. Must be run on a Sharepoint/WSS server."); }
 
-                foreach (SiteCollection currentSite in siteCollArray)
-                {
-                    ArrayList subWebs = currentSite.subWebs;
-                    if (subWebs.Count > 0)
+                    foreach (SiteCollection currentSite in siteCollArray)
                     {
-                        if (currentSite.webCount == 0)
+                        ArrayList subWebs = currentSite.subWebs;
+                        if (subWebs.Count > 0)
                         {
-                            log.AppendEntry("");
-                            log.AppendEntry("Waking site under the address " + currentSite.URL);
-                        }
-                        else
-                        {
-                            log.AppendEntry("");
-                            log.AppendEntry("Waking " + (currentSite.webCount + 1).ToString() + " sites under the address " + currentSite.URL);
-                        }
-
-                        int x = 0;
-                        foreach (string URL in subWebs)
-                        {
-                            x++;
-                            bool success = GetWebPage(URL, initVals.userName, initVals.password, initVals.domain, initVals.authType);
-                            if (success)
+                            if (currentSite.webCount == 0)
                             {
-                                if (initVals.verbose)
+                                log.AppendEntry("");
+                                log.AppendEntry("Waking site under the address " + currentSite.URL);
+                            }
+                            else
+                            {
+                                log.AppendEntry("");
+                                log.AppendEntry("Waking " + (currentSite.webCount + 1).ToString() + " sites under the address " + currentSite.URL);
+                            }
+
+                            int x = 0;
+                            foreach (string URL in subWebs)
+                            {
+                                x++;
+                                bool success = GetWebPage(URL, initVals.userName, initVals.password, initVals.domain, initVals.authType);
+                                if (success)
                                 {
-                                    log.AppendEntry("Woke: " + URL);
-                                }
-                                else
-                                {
-                                    drawTextProgressBar(x, subWebs.Count);
-                                    //Console.Write(".");
+                                    if (initVals.verbose)
+                                    {
+                                        log.AppendEntry("Woke: " + URL);
+                                    }
+                                    else
+                                    {
+                                        drawTextProgressBar(x, subWebs.Count);
+                                        //Console.Write(".");
+                                    }
                                 }
                             }
+
+                            Console.WriteLine("");
+                            //Console.WriteLine("");
                         }
-                        
-                        Console.WriteLine("");
-                        //Console.WriteLine("");
                     }
                 }
 
@@ -385,6 +398,9 @@ namespace SPWakeup3
                 help.Add("You only need to set this option if you are also specifying an account.");
                 help.Add("-Authentication: The type of authentication used to browse the sites.");
                 help.Add("By default NTLM authentication is used.");
+                help.Add("-NotASharePointServer: Specify that you are running SPWakeUp on a server that is NOT running SharePoint.");
+                help.Add("If using this option, you MUST include either -Include or -IncludeFile. Example:");
+                help.Add("SPWakeUp3.exe -notasharepointserver -Include:http://anothersystem.domain.com");
                 help.Add("-Verbose If this flag is set, every site is listed by URL.");
                 help.Add("By default only the Total number of sites is listed.");
                 help.Add("[Warning] If you use the Email option in conjunction with Verbose mode, the");
@@ -504,6 +520,7 @@ namespace SPWakeup3
                         initVals.AppendIncludeFile(currentArg.Substring(13));
                         break;
                     case "-username":
+                        log.AppendEntry("Using username: " + currentArg.Substring(10));
                         initVals.userName = currentArg.Substring(10);
                         break;
                     case "-domain":
@@ -514,6 +531,11 @@ namespace SPWakeup3
                         break;
                     case "-authentication":
                         initVals.authType = currentArg.Substring(16);
+                        break;
+                    case "-notasharepointserver":
+                        // Need to determine whether a value is passed. Could be $true or $false
+                        initVals.isSPServer = false;
+                        log.AppendEntry("Running on a non-SharePoint server");
                         break;
                     case "-verbose":
                         initVals.verbose = true;
@@ -533,7 +555,7 @@ namespace SPWakeup3
                 }
             }
         }
-
+        
         public static bool GetWebPage(string URL, string UserName, string Password, string Domain, string AuthType)
         {
             try

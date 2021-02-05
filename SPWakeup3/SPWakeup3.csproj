@@ -56,7 +56,7 @@
   <ItemGroup>
     <Reference Include="Microsoft.SharePoint, Version=16.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\SP DLLs\SP2013\Microsoft.SharePoint.dll</HintPath>
+      <HintPath>..\..\SP DLLs\SP2019\Microsoft.SharePoint.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
