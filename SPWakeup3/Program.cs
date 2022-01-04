@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Net;
+using System.Net.Mail;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
@@ -25,6 +26,7 @@ namespace SPWakeup3
         public ArrayList includeFileArray = new ArrayList();
         public string userName = "";
         public string password = "";
+        public string mailfrom = "";
         public string domain = "";
         public string authType = "NTLM";
         public string email = "";
@@ -32,7 +34,12 @@ namespace SPWakeup3
         public bool isSPServer = true;
         public bool verbose = false;
         public bool run = true;
-        //public string mailServer = "";
+        public string mailServer = "";
+        public bool mailSSL = false;
+        public int mailPort = 25;
+        public bool useDefaultMailPort = true;
+        public string mailusername = "";
+        public string mailpassword = "";
 
         public void AppendExclude(string newAddress)
         {
@@ -221,6 +228,26 @@ namespace SPWakeup3
                 }
             }
 
+            // Need to let the user know if we don't think we have enough information to use a specified mail server
+            if (initVals.mailServer != "")
+            {
+                // The user has specified a mail server to use to send the e-mail message
+                if (initVals.email == "")
+                {
+                    // But has not specified a to address...
+                    log.AppendEntry("While a mail server HAS been specified, no 'To' address has been specified, e-mail will NOT be sent." );
+
+                }
+                else
+                { 
+                    if ((initVals.mailusername == "" && initVals.mailpassword == "") || (initVals.mailusername != "" && initVals.mailpassword == "") || (initVals.mailusername == "" && initVals.mailpassword != ""))
+                    {
+                        // But has specified either no, or incomplete, credentials for the mail server...
+                        log.AppendEntry("While a mail server HAS been specified, either no credentials or incomplete credentials have been supplied, attempting to send e-mail anonymously.");
+                    }
+                }
+            }
+
             if (initVals.run)
             {
                 if (initVals.isSPServer == true)
@@ -317,14 +344,13 @@ namespace SPWakeup3
 
                 }
 
-                    if (initVals.email != "")
+                if (initVals.email != "")
                 {
                     string br = "<br>\n";
 
                     string toAddress = initVals.email;
-
+                    string fromAddress = initVals.mailfrom;
                     string subject = "SPWakeup finished running with " + log.successCount.ToString() + " successes and " + log.failCount.ToString() + " failures on " +  System.Environment.MachineName;
-
                     string body = "SPWakeup finished running at " + DateTime.Now.ToString() + " on " + System.Environment.MachineName + br + br;
                     switch (log.successCount)
                     {
@@ -368,7 +394,15 @@ namespace SPWakeup3
                         { body += entry + br; }
                     }
 
-                    EmailResults(toAddress, subject, body);
+                    if (initVals.mailServer != "")
+                    {
+                        // Call the new function to mail via a specified mailserver.
+                        EmailResultsUsingMailServer(toAddress, fromAddress, subject, body, initVals.mailServer, initVals.mailPort, initVals.mailSSL, initVals.mailusername, initVals.mailpassword);
+                    } 
+                    else 
+                    {
+                        EmailResults(toAddress, subject, body); 
+                    }
                 }
             }
             else
@@ -380,33 +414,42 @@ namespace SPWakeup3
                 help.Add("These options are not case sensitive.");
                 help.Add("");
                 help.Add("Available run-time options are: ");
-                help.Add("-Exclude: Excludes the listed Site Collection URL from being woken.");
-                help.Add("Can be used more than once. Example:");
-                help.Add("SPWakeUp3.exe -Exclude:http://sharepoint.sp.com/sites/SC1 -Exclude:http://sharepoint.sp.com/sites/SC2");
-                help.Add("-Include: Includes the listed URL in the list to be woken.");
-                help.Add("Can be used more than once. Example:");
-                help.Add("SPWakeUp3.exe -Exclude:http://sharepoint.sp.com/sites/SC1 -Include:http://sharepoint.sp.com/sites/SC1/SubSite1");
-                help.Add("which would exclude the entirety of the SC1 site collection except SubSite1 from the wake-up process.");
-                help.Add("-IncludeFile: Includes URLs listed in the text file specified. Include the full path to the file on the local file system.");
-                help.Add("Use once. URLs should be listed one per line. Example:");
-                help.Add("SPWakeUp3.exe -IncludeFile:C:\\SPWakeUp\\URLstoWake.txt");
-                help.Add("-Email: An email address that should be sent a log of the results.");
-                help.Add("-UserName: Name of the account that should be used to browse the sites.");
-                help.Add("If no user name is set, sites are accessed under the current account.");
-                help.Add("-Domain: The domain of the account specified above.");
-                help.Add("-Password: The password that should be used to browse the sites.");
-                help.Add("You only need to set this option if you are also specifying an account.");
+                help.Add("-Exclude:        Excludes the listed Site Collection URL from being woken.");
+                help.Add("                 Can be used more than once. Example:");
+                help.Add("                 SPWakeUp3.exe -Exclude:http://sharepoint.sp.com/sites/SC1 -Exclude:http://sharepoint.sp.com/sites/SC2");
+                help.Add("-Include:        Includes the listed URL in the list to be woken.");
+                help.Add("                 Can be used more than once. Example:");
+                help.Add("                 SPWakeUp3.exe -Exclude:http://sharepoint.sp.com/sites/SC1 -Include:http://sharepoint.sp.com/sites/SC1/SubSite1");
+                help.Add("                 This would exclude the entirety of the SC1 site collection except SubSite1 from the wake-up process.");
+                help.Add("-IncludeFile:    Includes URLs listed in the text file specified. Include the full path to the file on the local file system.");
+                help.Add("                 Use once. URLs should be listed one per line. Example:");
+                help.Add("                 SPWakeUp3.exe -IncludeFile:C:\\SPWakeUp\\URLstoWake.txt");
+                help.Add("-Email:          An email address that should be sent a log of the results.");
+                help.Add("-MailServer:     Specify a mailserver to use to send e-mail message if not using SharePoint's e-mail component.");
+                // Note that the following *may* need to be altered as not sure whether can send mail using SSL...
+                help.Add("-MailSSL:        If this parameter is included, mail is sent using SSL encryption.");
+                help.Add("-MailPort:       The network port to send e-mail via. Note: If not specified, and a mailserver is specified, the default port (25) will be used.");
+                // Anonymous e-mail? Need to warn when we start perhaps? What logic do we need to determine what's going on?
+                help.Add("-MailUserName:   The username to send e-mail as if specifying a mailserver to use to send the e-mail message. If this is not specified, anonymous e-mail will be attempted.");
+                help.Add("-MailPassword:   The password to be used with the mail username to send the e-mail message.");
+                help.Add("-MailFrom:       The mail address to set as the from address for the message.");
+                help.Add("                 If not specified, and a mail username is specified, that will be used instead. If neither is specified, a default will be used.");
+                help.Add("-UserName:       Name of the account that should be used to browse the sites.");
+                help.Add("                 If no user name is set, sites are accessed under the current account.");
+                help.Add("-Domain:         The domain of the account specified above.");
+                help.Add("-Password:       The password that should be used to browse the sites.");
+                help.Add("                 You only need to set this option if you are also specifying an account.");
                 help.Add("-Authentication: The type of authentication used to browse the sites.");
-                help.Add("By default NTLM authentication is used.");
+                help.Add("                 By default NTLM authentication is used.");
                 help.Add("-NotASharePointServer: Specify that you are running SPWakeUp on a server that is NOT running SharePoint.");
-                help.Add("If using this option, you MUST include either -Include or -IncludeFile. Example:");
-                help.Add("SPWakeUp3.exe -notasharepointserver -Include:http://anothersystem.domain.com");
-                help.Add("-Verbose If this flag is set, every site is listed by URL.");
-                help.Add("By default only the Total number of sites is listed.");
-                help.Add("[Warning] If you use the Email option in conjunction with Verbose mode, the");
-                help.Add("resulting email may be cut-off after 2,048 characters.  This is due to a bug");
-                help.Add("with Sharepoint's SPUtility.SendEmail function.");
-                help.Add("-Help Shows this help screen.");
+                help.Add("                 If using this option, you MUST include either -Include or -IncludeFile. Example:");
+                help.Add("                 SPWakeUp3.exe -notasharepointserver -Include:http://anothersystem.domain.com");
+                help.Add("-Verbose:        If this flag is set, every site is listed by URL.");
+                help.Add("                 By default only the Total number of sites is listed.");
+                help.Add("                 [Warning] If you use the Email option in conjunction with Verbose mode, the");
+                help.Add("                 resulting email may be cut-off after 2,048 characters.  This is due to a bug");
+                help.Add("                 with Sharepoint's SPUtility.SendEmail function.");
+                help.Add("-Help:           Shows this help screen.");
 
                 foreach (string newLine in help)
                 { log.AppendEntry(newLine); }
@@ -485,6 +528,60 @@ namespace SPWakeup3
             }
         }
 
+        private static void EmailResultsUsingMailServer(string toAddress, string fromAddress, string subject, string body, string mailserver, Int32 mailport, bool mailssl, string mailusername, string mailpassword)
+        {
+            // Will only be called if toAddress is not ""
+            // Assemble the message
+            MailMessage mailMessage = new MailMessage();
+            mailMessage.To.Add(new MailAddress(toAddress));
+            mailMessage.Subject = subject;
+            mailMessage.IsBodyHtml = true;
+            mailMessage.Body = body;
+
+            if (fromAddress != "")
+            {
+                mailMessage.From = new MailAddress(fromAddress);
+            }
+            else if (mailusername != "")
+            {
+                mailMessage.From = new MailAddress(mailusername);
+            }
+            else
+            {
+                mailMessage.From = new MailAddress("SPWakeUp3@" + System.Environment.MachineName);
+            }
+            
+            // Define the client settings
+            SmtpClient client = new SmtpClient();
+            if ((mailusername != "") && (mailpassword != ""))
+            {
+                client.Credentials = new System.Net.NetworkCredential(mailusername, mailpassword);
+            }
+
+            client.Host = mailserver;
+            
+            if (mailport != 25)
+            {
+                client.Port = mailport;
+            }
+
+            if (mailssl == true)
+            {
+                client.EnableSsl = true;
+            }
+
+            try
+            {
+                Console.WriteLine("Emailing results to " + toAddress + " using mail server " + mailserver);
+                client.Send(mailMessage);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error emailing results to " + toAddress);
+                Console.WriteLine("Error Message: " + ex.Message.ToString());
+            }
+        }
+
         private static void GetInitValues(string[] args)
         {
             foreach (string currentArg in args)
@@ -498,9 +595,28 @@ namespace SPWakeup3
                     case "-email":
                         initVals.email = currentArg.Substring(7);
                         break; 
-                    //case "-mailserver":
-                        //initVals.mailServer = currentArg.Substring(12);
-                        //break;
+                    case "-mailserver":
+                        initVals.mailServer = currentArg.Substring(12);
+                        break;
+                    case "-mailssl":
+                        initVals.mailSSL = true;
+                        log.AppendEntry("Sending mail using SSL (specified mail server)");
+                        break;
+                    case "-mailport":
+                        initVals.mailPort = System.Convert.ToInt32(currentArg.Substring(10));
+                        initVals.useDefaultMailPort = false;
+                        log.AppendEntry("Sending mail using port " + initVals.mailPort + " (specified mail server)");
+                        break;
+                    case "-mailusername":
+                        initVals.mailusername = currentArg.Substring(14);
+                        log.AppendEntry("Sending mail using username " + initVals.mailusername + " (specified mail server)");
+                        break;
+                    case "-mailpassword":
+                        initVals.mailpassword = currentArg.Substring(14);
+                        break;
+                    case "-mailfrom":
+                        initVals.mailfrom = currentArg.Substring(10);
+                        break;
                     //case "-log":
                     //    initVals.logFile = currentArg.Substring(5);
                     //    break;
@@ -533,7 +649,7 @@ namespace SPWakeup3
                         initVals.authType = currentArg.Substring(16);
                         break;
                     case "-notasharepointserver":
-                        // Need to determine whether a value is passed. Could be $true or $false
+                        // We just need to see that the parameter is here.
                         initVals.isSPServer = false;
                         log.AppendEntry("Running on a non-SharePoint server");
                         break;

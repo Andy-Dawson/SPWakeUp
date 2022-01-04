@@ -1,2 +1,5 @@
 # exclude ExternalResources directory
 /ExternalResources
+/SPWakeup3/bin
+/SPWakeup3/obj
+
