@@ -16,13 +16,15 @@ If you wish to compile SPWakeUp yourself, please follow the information in [Buil
 
 ---
 
+**New version released**: V1.4.0 includes the ability to send a notification e-mail on completion via an alternate mail server instead of sending via SharePoint.
+
 **New version released**: V1.3.0 includes the ability to run on a server that is not running SharePoint to wake arbitrary URLs.
 
 **New version released**: V1.2.0 includes the ability to import a file of URLs to be included in the list of URLs to be woken.
 
 **New version released**: V1.1.0 includes the ability to include specific URLs in the list of URLs to be woken.
 
-[Releases](https://github.com/Andy-Dawson/SPWakeUp/releases) contain binaries compiled for SharePoint 2013, SharePoint 2016 and SharePoint 2019.
+[Releases](https://github.com/Andy-Dawson/SPWakeUp/releases) contain binaries compiled for SharePoint 2013, SharePoint 2016, SharePoint 2019 and Sharepoint Subscription Edition.
 
 Running SPWakeUp without any options will search for and find all Web Applications on your farm. Each Web App will in turn be searched for Site Collections and Sub-Sites. Once a list of every URL is built, spwakup will open an HTTP connection to each in turn. This rebuilds the caches on the server which improves performance for subsequent visits. To configure your SharePoint far to use SHWakeUp, follow the instructions at [SharePoint-configuration.md](SharePoint-configuration.md).
 
@@ -51,9 +53,27 @@ URLs should be specified one per line in the file to be used. If an empty file i
 Should be used once. Example: SPWakeUp3.exe -NotASharePointServer -Include:http://anothersystem.domain.com
 
 -Email: An email address that should be sent a log of the results.  
-**Note**: The implementation currently uses SharePoint's e-mail configuration to send e-mail. To send e-mail you should have configured SharePoint's outgoing e-mail and have ensured that the configuration is functional. Use of SPWakeUp3 on a system not running SharePoint will mean that e-mail notifications will not work.
+**Note**: The v1.3.0 and prior implementations use SharePoint's e-mail configuration to send e-mail. To send e-mail you should have configured SharePoint's outgoing e-mail and have ensured that the configuration is functional. Use of SPWakeUp3 on a system not running SharePoint will mean that e-mail notifications will not work. From v1.4.0 you can send a notification via another mail server instead if required.
 
--UserName: Name of the account that should be used to browse the sites. If no user name is set, sites are accessed under the current account. This option must be used in conjunction with the -Domain and -Password options.  
+-MailServer (new for v1.4.0): A mail server to use to send e-mail message if not using SharePoint's e-mail component.
+
+-MailSSL (new for v1.4.0): If this parameter is included, mail is sent using SSL encryption.
+
+-MailPort (new for v1.4.0): The network port to send e-mail via. Note: If not specified, and a mailserver is specified, the default port (25) will be used.
+
+-MailUserName (new for v1.4.0): The username to send e-mail as if specifying a mailserver to use to send the e-mail message. If this is not specified, anonymous e-mail will be attempted.
+
+-MailPassword (new for v1.4.0): The password to be used with the mail username to send the e-mail message.
+
+-MailFrom (new for v1.4.0): The mail address to set as the from address for the message. If not specified, and a mail username is specified, that will be used instead. If neither is specified, a default will be used.
+
+Example: SPWakeUp3.exe -Email:user@domain.com -MailServer:mail.domain.com -MailUserName:user@domain.com -MailPassword:SuperSecretPassword -MailFrom:user2@domain.com  
+This example would attempt to send a completion notification to user@domain.com from user2@domain.com using the mail server at mail.domain.com and specifying the credentials to provide to the mail server.  
+**Note**: This functionality has been tested with an authenticated mail server and also using Office 365's internal only anonymous mail service (see [Office 365 Direct Send](https://docs.microsoft.com/en-us/exchange/mail-flow-best-practices/how-to-set-up-a-multifunction-device-or-application-to-send-email-using-microsoft-365-or-office-365#option-2-send-mail-directly-from-your-printer-or-application-to-microsoft-365-or-office-365-direct-send) for further details).
+
+-UserName: Name of the account that should be used to browse the sites. If no user name is set, sites are accessed under the current account. This option must be used in conjunction with the 
+
+-Domain and -Password options.  
 -Domain: The domain of the account specified above.  
 -Password: The password that should be used to browse the sites.
 
